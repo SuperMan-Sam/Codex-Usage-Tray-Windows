@@ -99,6 +99,18 @@ dotnet test .\CodexUsageTray.Tests\CodexUsageTray.Tests.csproj -c Debug "-p:Plat
 
 The test suite covers parser behavior, reset-hour formatting, and tray icon state thresholds.
 
+## License / 许可证
+
+This project is released under the [Codex Usage Tray Non-Commercial License](LICENSE).
+
+You may use, copy, modify, and share this software for free for personal, learning, research, and evaluation purposes.
+
+Commercial use is not allowed without separate written permission. This includes selling the software, charging for it, bundling it with a commercial product, offering it as part of a paid service, or using it primarily for commercial advantage or monetary compensation.
+
+本项目采用 [Codex Usage Tray 非商用许可证](LICENSE)。
+
+本软件可免费用于个人、学习、研究和评估等非商业用途。未经单独书面授权，不允许任何商业用途，包括销售、收费分发、集成到商业产品或付费服务中，或以商业利益、金钱报酬为主要目的使用。
+
 ## Project Layout
 
 ```text
