@@ -2,6 +2,15 @@
 
 Codex Usage Tray is a compact Windows utility that shows ChatGPT Codex usage in a tray app and an official Windows 11 Widget. It reads the official Codex usage page in an embedded WebView2 session, caches the latest safe snapshot locally, and renders the 5-hour and weekly remaining limits in the Widgets board.
 
+## 中文快速开始
+
+1. 运行 `.\RegisterCodexUsageWidget.ps1` 注册 Windows 11 Widget。
+2. 运行 `.\StartCodexUsageTray.cmd` 打开主程序。
+3. 在主程序的 WebView2 页面登录 ChatGPT，然后点击 Refresh 获取用量。
+4. 按 `Win+W` 打开 Windows Widgets，点击添加小组件，选择 `Codex Usage`。
+
+Widget 会显示最近一次缓存的 Codex `5h limit` 和 `Weekly limit`。如果 Widget 显示未知状态，先回到主程序刷新一次。
+
 ## Features
 
 - Shows Codex 5-hour and weekly remaining usage in an official Windows 11 Widget.
