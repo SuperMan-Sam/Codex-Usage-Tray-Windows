@@ -1,3 +1,4 @@
+using CodexUsageTray.Services;
 using Windows.Graphics;
 using Microsoft.UI.Xaml;
 using WinRT.Interop;
@@ -22,6 +23,9 @@ public sealed partial class MainWindow : Window
 
         MainPage = new MainPage();
         RootFrame.Content = MainPage;
+        ApplyLocalization();
+        LanguageSettingsService.LanguageChanged += OnLanguageChanged;
+        Closed += OnClosed;
     }
 
     public MainPage MainPage { get; }
@@ -49,5 +53,22 @@ public sealed partial class MainWindow : Window
 
         args.Cancel = true;
         sender.Hide();
+    }
+
+    private void ApplyLocalization()
+    {
+        Title = AppText.AppName;
+        AppTitleBar.Title = AppText.AppName;
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs args)
+    {
+        DispatcherQueue.TryEnqueue(ApplyLocalization);
+    }
+
+    private void OnClosed(object sender, WindowEventArgs args)
+    {
+        LanguageSettingsService.LanguageChanged -= OnLanguageChanged;
+        Closed -= OnClosed;
     }
 }

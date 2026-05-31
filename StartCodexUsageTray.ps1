@@ -68,7 +68,16 @@ $runningProcesses = @(Get-Process -Name "CodexUsageTray" -ErrorAction SilentlyCo
 foreach ($process in $runningProcesses) {
     $windows = [WindowTools]::FindWindowsForProcess($process.Id)
     if ($windows.Count -gt 0) {
-        $mainWindow = $windows | Where-Object { [WindowTools]::GetWindowTitle($_) -eq "Codex Usage Tray" } | Select-Object -First 1
+        $mainWindow = $windows |
+            Where-Object {
+                $title = [WindowTools]::GetWindowTitle($_)
+                $title -eq "Codex Usage Tray" -or $title -eq "Codex 用量托盘"
+            } |
+            Select-Object -First 1
+        if ($null -eq $mainWindow) {
+            $mainWindow = $windows | Select-Object -First 1
+        }
+
         if ($null -ne $mainWindow) {
             [WindowTools]::RestoreWindow($mainWindow)
             exit 0

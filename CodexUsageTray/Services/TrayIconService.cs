@@ -215,23 +215,21 @@ internal sealed class TrayIconService : IDisposable
     {
         if (snapshot.FiveHourLimit is not null || snapshot.WeeklyLimit is not null)
         {
-            string fiveHour = snapshot.FiveHourLimit is null ? "5h --" : $"5h {snapshot.FiveHourLimit.PercentRemaining}%";
-            string weekly = snapshot.WeeklyLimit is null ? "Week --" : $"Week {snapshot.WeeklyLimit.PercentRemaining}%";
+            string fiveHour = snapshot.FiveHourLimit is null
+                ? "5h --"
+                : $"5h {AppText.FormatCompactPercent(snapshot.FiveHourLimit.PercentRemaining)}";
+            string weekly = snapshot.WeeklyLimit is null
+                ? $"{AppText.ShortWeeklyLimit} --"
+                : $"{AppText.ShortWeeklyLimit} {AppText.FormatCompactPercent(snapshot.WeeklyLimit.PercentRemaining)}";
             return $"Codex {fiveHour} | {weekly}";
         }
 
         if (snapshot.PercentRemaining is int percent)
         {
-            return $"Codex {percent}% remaining";
+            return $"Codex {AppText.FormatRemainingPercent(percent)}";
         }
 
-        return snapshot.Status switch
-        {
-            UsageStatus.LoginRequired => "Codex login required",
-            UsageStatus.Unsupported => "Codex login unsupported",
-            UsageStatus.LimitReached => "Codex limit reached",
-            _ => "Codex usage unavailable",
-        };
+        return $"Codex {AppText.StatusText(snapshot.Status)}";
     }
 
     private static string Truncate(string text)

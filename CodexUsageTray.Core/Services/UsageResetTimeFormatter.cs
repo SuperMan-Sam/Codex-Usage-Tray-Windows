@@ -8,12 +8,7 @@ public static partial class UsageResetTimeFormatter
 {
     public static string FormatHoursUntilReset(UsageLimitSnapshot? limit, DateTimeOffset capturedAt)
     {
-        if (limit is null || string.IsNullOrWhiteSpace(limit.ResetText))
-        {
-            return "--";
-        }
-
-        if (!TryParseResetTime(limit.ResetText, capturedAt, out DateTimeOffset resetAt))
+        if (!TryGetResetTime(limit, capturedAt, out DateTimeOffset resetAt))
         {
             return "--";
         }
@@ -26,6 +21,26 @@ public static partial class UsageResetTimeFormatter
 
         int hours = Math.Max(1, (int)Math.Ceiling(remaining.TotalHours));
         return string.Create(CultureInfo.InvariantCulture, $"{hours}h");
+    }
+
+    public static bool TryGetFiveHourWindow(UsageSnapshot snapshot, out TokenUsageWindow window)
+    {
+        window = default!;
+        if (!TryGetResetTime(snapshot.FiveHourLimit, snapshot.CapturedAt, out DateTimeOffset resetAt))
+        {
+            return false;
+        }
+
+        window = new TokenUsageWindow(resetAt - TimeSpan.FromHours(5), resetAt);
+        return true;
+    }
+
+    public static bool TryGetResetTime(UsageLimitSnapshot? limit, DateTimeOffset capturedAt, out DateTimeOffset resetAt)
+    {
+        resetAt = default;
+        return limit is not null
+            && !string.IsNullOrWhiteSpace(limit.ResetText)
+            && TryParseResetTime(limit.ResetText, capturedAt, out resetAt);
     }
 
     private static bool TryParseResetTime(string resetText, DateTimeOffset capturedAt, out DateTimeOffset resetAt)

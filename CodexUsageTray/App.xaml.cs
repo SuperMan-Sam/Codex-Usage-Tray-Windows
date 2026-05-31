@@ -9,6 +9,7 @@ public partial class App : Application
 {
     private MainWindow? _window;
     private TrayIconService? _trayIcon;
+    private TaskbarWidgetService? _taskbarWidget;
     private WidgetProviderRegistrationService? _widgetProviderRegistration;
 
     public App()
@@ -41,6 +42,14 @@ public partial class App : Application
                 ShowSettingsAsync,
                 ExitApplication);
             _window.MainPage.AttachTrayIcon(_trayIcon);
+            _taskbarWidget = new TaskbarWidgetService(
+                DispatcherQueue.GetForCurrentThread(),
+                ShowWindow,
+                RefreshAsync,
+                OpenUsagePageAsync,
+                ShowSettingsAsync,
+                ExitApplication);
+            _taskbarWidget.Update(_window.MainPage.ViewModel.Snapshot);
             _window.MainPage.SnapshotChanged += OnSnapshotChanged;
             UsageSnapshotCache.Save(_window.MainPage.ViewModel.Snapshot);
             CodexUsageWidgetProvider.UpdateAllFromSnapshot(_window.MainPage.ViewModel.Snapshot);
@@ -87,6 +96,8 @@ public partial class App : Application
     {
         _trayIcon?.Dispose();
         _trayIcon = null;
+        _taskbarWidget?.Dispose();
+        _taskbarWidget = null;
         _widgetProviderRegistration?.Dispose();
         _widgetProviderRegistration = null;
         _window?.MainPage.Shutdown();
@@ -97,6 +108,7 @@ public partial class App : Application
     private void OnSnapshotChanged(object? sender, CodexUsageTray.Core.Models.UsageSnapshot snapshot)
     {
         UsageSnapshotCache.Save(snapshot);
+        _taskbarWidget?.Update(snapshot);
         CodexUsageWidgetProvider.UpdateAllFromSnapshot(snapshot);
     }
 

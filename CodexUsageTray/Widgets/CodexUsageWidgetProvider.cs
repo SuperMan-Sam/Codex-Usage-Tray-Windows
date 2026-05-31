@@ -12,7 +12,15 @@ internal sealed class CodexUsageWidgetProvider : IWidgetProvider
 {
     public const string DefinitionId = "CodexUsage_Widget";
 
-    private const string TemplateJson = """
+    private static string CreateTemplateJson()
+    {
+        string title = JsonSerializer.Serialize(AppText.CodexUsageTitle);
+        string fiveHourLimit = JsonSerializer.Serialize(AppText.FiveHourLimit);
+        string weeklyLimit = JsonSerializer.Serialize(AppText.WeeklyLimit);
+        string openUsagePage = JsonSerializer.Serialize(AppText.OpenUsagePage);
+        string usageUrl = JsonSerializer.Serialize(AppText.UsageUrl);
+
+        return $$"""
         {
           "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
           "type": "AdaptiveCard",
@@ -20,7 +28,7 @@ internal sealed class CodexUsageWidgetProvider : IWidgetProvider
           "body": [
             {
               "type": "TextBlock",
-              "text": "Codex Usage",
+              "text": {{title}},
               "weight": "Bolder",
               "size": "Medium",
               "wrap": true
@@ -35,7 +43,7 @@ internal sealed class CodexUsageWidgetProvider : IWidgetProvider
                   "items": [
                     {
                       "type": "TextBlock",
-                      "text": "5h limit",
+                      "text": {{fiveHourLimit}},
                       "isSubtle": true,
                       "spacing": "None"
                     },
@@ -60,7 +68,7 @@ internal sealed class CodexUsageWidgetProvider : IWidgetProvider
                   "items": [
                     {
                       "type": "TextBlock",
-                      "text": "Weekly limit",
+                      "text": {{weeklyLimit}},
                       "isSubtle": true,
                       "spacing": "None"
                     },
@@ -99,12 +107,13 @@ internal sealed class CodexUsageWidgetProvider : IWidgetProvider
           "actions": [
             {
               "type": "Action.OpenUrl",
-              "title": "Open usage page",
-              "url": "https://chatgpt.com/codex/settings/usage"
+              "title": {{openUsagePage}},
+              "url": {{usageUrl}}
             }
           ]
         }
         """;
+    }
 
     private static readonly ConcurrentDictionary<string, RunningWidgetInfo> RunningWidgets = new();
 
@@ -177,7 +186,7 @@ internal sealed class CodexUsageWidgetProvider : IWidgetProvider
         {
             WidgetUpdateRequestOptions options = new(info.WidgetId)
             {
-                Template = TemplateJson,
+                Template = CreateTemplateJson(),
                 Data = CreateDataJson(snapshot),
                 CustomState = snapshot.CapturedAt.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture),
             };
@@ -198,7 +207,7 @@ internal sealed class CodexUsageWidgetProvider : IWidgetProvider
             weeklyPercent = FormatPercent(snapshot.WeeklyLimit),
             weeklyReset = FormatReset(snapshot.WeeklyLimit, snapshot.CapturedAt),
             statusText = FormatStatus(snapshot),
-            updatedAt = $"Updated {snapshot.CapturedAt.ToLocalTime():g}",
+            updatedAt = AppText.Updated(snapshot.CapturedAt),
         });
     }
 
@@ -216,11 +225,11 @@ internal sealed class CodexUsageWidgetProvider : IWidgetProvider
     {
         return snapshot.Status switch
         {
-            UsageStatus.Available => "Usage loaded",
-            UsageStatus.LimitReached => "Limit reached",
-            UsageStatus.LoginRequired => "Open Codex Usage Tray to sign in",
-            UsageStatus.Unsupported => "Login unsupported in embedded browser",
-            _ => "Usage unavailable",
+            UsageStatus.Available => AppText.UsageLoaded,
+            UsageStatus.LimitReached => AppText.LimitReached,
+            UsageStatus.LoginRequired => AppText.OpenAppToSignIn,
+            UsageStatus.Unsupported => AppText.LoginUnsupportedInEmbeddedBrowser,
+            _ => AppText.UsageUnavailable,
         };
     }
 

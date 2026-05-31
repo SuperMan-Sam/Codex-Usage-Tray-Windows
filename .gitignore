@@ -26,3 +26,8 @@ BundleArtifacts/
 /taskbar-*.png
 /widget-*.png
 /xaml-widget-*.png
+
+# CodexUsageTray local runtime state/cache
+/CodexUsageTray/[Ww]eb[Vv]iew2/
+/CodexUsageTray/[Pp]ricing/
+/CodexUsageTray/settings.json

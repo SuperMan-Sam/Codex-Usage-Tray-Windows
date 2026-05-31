@@ -1,10 +1,13 @@
 using System.Text.Json;
 using CodexUsageTray.Core.Models;
 using CodexUsageTray.Core.Services;
+using CodexUsageTray.Core.Services.TokenMeter;
 using CodexUsageTray.Services;
 using CodexUsageTray.ViewModels;
+using CodexUsageTray.Widgets;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Web.WebView2.Core;
 
@@ -16,6 +19,7 @@ public sealed partial class MainPage : Page
     private static readonly TimeSpan UsageRenderPollInterval = TimeSpan.FromSeconds(1);
 
     private readonly UsagePageParser _parser = new();
+    private readonly TokenUsageMeter _tokenUsageMeter = new();
     private readonly DispatcherQueueTimer _refreshTimer;
     private TrayIconService? _trayIcon;
     private bool _isRefreshInProgress;
@@ -30,6 +34,8 @@ public sealed partial class MainPage : Page
         _refreshTimer.Tick += OnRefreshTimerTick;
 
         Loaded += OnLoaded;
+        LanguageSettingsService.LanguageChanged += OnLanguageChanged;
+        ApplyLocalization();
     }
 
     public MainViewModel ViewModel { get; } = new();
@@ -51,6 +57,7 @@ public sealed partial class MainPage : Page
 
         _isRefreshInProgress = true;
         ViewModel.IsRefreshing = true;
+        ViewModel.IsTokenRefreshing = true;
 
         try
         {
@@ -58,25 +65,34 @@ public sealed partial class MainPage : Page
             bool loaded = await NavigateToUsagePageAsync();
             if (!loaded)
             {
-                ApplySnapshot(new UsageSnapshot("Login unsupported", string.Empty, string.Empty, null, DateTimeOffset.Now, UsageStatus.Unsupported));
+                UsageSnapshot unsupportedSnapshot = new("Login unsupported", string.Empty, string.Empty, null, DateTimeOffset.Now, UsageStatus.Unsupported);
+                ApplySnapshot(unsupportedSnapshot);
+                ApplyTokenSnapshot(await RefreshTokenUsageCoreAsync(unsupportedSnapshot));
                 return;
             }
 
-            ApplySnapshot(await CaptureUsageSnapshotAsync());
+            UsageSnapshot usageSnapshot = await CaptureUsageSnapshotAsync();
+            ApplySnapshot(usageSnapshot);
+            ApplyTokenSnapshot(await RefreshTokenUsageCoreAsync(usageSnapshot));
         }
         catch (Exception)
         {
-            ApplySnapshot(new UsageSnapshot("Login unsupported", string.Empty, string.Empty, null, DateTimeOffset.Now, UsageStatus.Unsupported));
+            UsageSnapshot unsupportedSnapshot = new("Login unsupported", string.Empty, string.Empty, null, DateTimeOffset.Now, UsageStatus.Unsupported);
+            ApplySnapshot(unsupportedSnapshot);
+            ApplyTokenSnapshot(await RefreshTokenUsageCoreAsync(unsupportedSnapshot));
         }
         finally
         {
             ViewModel.IsRefreshing = false;
+            ViewModel.IsTokenRefreshing = false;
             _isRefreshInProgress = false;
         }
     }
 
     public async Task OpenUsagePageAsync()
     {
+        ContentTabs.SelectedItem = UsagePageTab;
+        ResizeUsageWebViewToHost();
         await EnsureWebViewAsync();
         UsageWebView.CoreWebView2.Navigate(AppText.UsageUrl);
     }
@@ -85,26 +101,80 @@ public sealed partial class MainPage : Page
     {
         CheckBox startupCheckBox = new()
         {
-            Content = "Start with Windows",
+            Content = AppText.StartWithWindows,
             IsChecked = StartupService.IsEnabled(),
         };
         startupCheckBox.Checked += (_, _) => StartupService.SetEnabled(true);
         startupCheckBox.Unchecked += (_, _) => StartupService.SetEnabled(false);
 
+        List<LanguageOption> languageOptions = CreateLanguageOptions();
+        ComboBox languageComboBox = new()
+        {
+            ItemsSource = languageOptions,
+            DisplayMemberPath = nameof(LanguageOption.DisplayName),
+            SelectedItem = languageOptions.First(option => option.Mode == LanguageSettingsService.CurrentMode),
+            MinWidth = 220,
+        };
+        languageComboBox.SelectionChanged += (_, _) =>
+        {
+            if (languageComboBox.SelectedItem is LanguageOption option)
+            {
+                LanguageSettingsService.SetMode(option.Mode);
+            }
+        };
+
+        StackPanel languagePanel = new()
+        {
+            Spacing = 4,
+        };
+        languagePanel.Children.Add(new TextBlock { Text = AppText.Language });
+        languagePanel.Children.Add(languageComboBox);
+
+        TextBlock fontSizeValueText = new()
+        {
+            Text = AppText.FontSizeValue(LanguageSettingsService.TaskbarFontSize),
+        };
+        Slider fontSizeSlider = new()
+        {
+            Minimum = LanguageSettingsService.MinimumTaskbarFontSize,
+            Maximum = LanguageSettingsService.MaximumTaskbarFontSize,
+            StepFrequency = 0.5,
+            Value = LanguageSettingsService.TaskbarFontSize,
+            SmallChange = 0.5,
+            LargeChange = 1.0,
+            Width = 220,
+        };
+        fontSizeSlider.ValueChanged += (_, args) =>
+        {
+            double fontSize = Math.Round(args.NewValue * 2, MidpointRounding.AwayFromZero) / 2;
+            fontSizeValueText.Text = AppText.FontSizeValue(fontSize);
+            LanguageSettingsService.SetTaskbarFontSize(fontSize);
+        };
+
+        StackPanel fontSizePanel = new()
+        {
+            Spacing = 4,
+        };
+        fontSizePanel.Children.Add(new TextBlock { Text = AppText.TaskbarFontSize });
+        fontSizePanel.Children.Add(fontSizeSlider);
+        fontSizePanel.Children.Add(fontSizeValueText);
+
         StackPanel content = new()
         {
             Spacing = 8,
         };
+        content.Children.Add(languagePanel);
+        content.Children.Add(fontSizePanel);
         content.Children.Add(startupCheckBox);
-        content.Children.Add(new TextBlock { Text = "Refresh interval: 1 minute" });
-        content.Children.Add(new TextBlock { Text = $"WebView2 data: {ViewModel.WebViewDataFolder}", TextWrapping = TextWrapping.WrapWholeWords });
-        content.Children.Add(new TextBlock { Text = "The app does not read local Codex auth files or private ChatGPT network APIs.", TextWrapping = TextWrapping.WrapWholeWords });
+        content.Children.Add(new TextBlock { Text = AppText.RefreshIntervalOneMinute });
+        content.Children.Add(new TextBlock { Text = $"{AppText.WebViewData}: {ViewModel.WebViewDataFolder}", TextWrapping = TextWrapping.WrapWholeWords });
+        content.Children.Add(new TextBlock { Text = AppText.NoCredentialFiles, TextWrapping = TextWrapping.WrapWholeWords });
 
         ContentDialog dialog = new()
         {
             Title = AppText.Settings,
             Content = content,
-            CloseButtonText = "Close",
+            CloseButtonText = AppText.Close,
             XamlRoot = XamlRoot,
         };
 
@@ -114,12 +184,58 @@ public sealed partial class MainPage : Page
     public void Shutdown()
     {
         _refreshTimer.Stop();
+        LanguageSettingsService.LanguageChanged -= OnLanguageChanged;
+    }
+
+    private void ApplyLocalization()
+    {
+        RefreshButton.Label = AppText.Refresh;
+        AutomationProperties.SetName(RefreshButton, AppText.RefreshUsageAutomationName);
+        OpenUsagePageButton.Label = AppText.OpenUsagePage;
+        AutomationProperties.SetName(OpenUsagePageButton, AppText.OpenUsagePageAutomationName);
+        SettingsButton.Label = AppText.Settings;
+        AutomationProperties.SetName(SettingsButton, AppText.OpenSettingsAutomationName);
+
+        PageTitleText.Text = AppText.CodexUsageTitle;
+        StatusLabel.Text = AppText.Status;
+        RemainingLabel.Text = AppText.Remaining;
+        FiveHourLimitLabel.Text = AppText.FiveHourLimit;
+        WeeklyLimitLabel.Text = AppText.WeeklyLimit;
+        UsedLabel.Text = AppText.Used;
+        ResetLabel.Text = AppText.Reset;
+        LastUpdatedLabel.Text = AppText.LastUpdated;
+        AutomationProperties.SetName(UsageWebView, AppText.OpenUsagePageAutomationName);
+        UsagePageTab.Header = AppText.OpenUsagePage;
+        TokenMeterTab.Header = AppText.TokenMeter;
+        TokenMeterTitleText.Text = AppText.TokenMeter;
+        TokenRangeLabel.Text = AppText.TokenRange;
+        TotalTokensLabel.Text = AppText.TotalTokens;
+        TokenCostLabel.Text = AppText.TokenCost;
+        FiveHourWindowTokensLabel.Text = AppText.FiveHourWindowTokens;
+        TokenBreakdownLabel.Text = AppText.TokenBreakdown;
+        TokenClientsLabel.Text = AppText.TokenClients;
+        TokenMetadataLabel.Text = AppText.TokenPricing;
+        TokenModelsLabel.Text = AppText.TokenModels;
+        ApplyTokenRangeComboText();
+
+        ViewModel.RefreshLocalization();
+        _trayIcon?.Update(ViewModel.Snapshot);
+        CodexUsageWidgetProvider.UpdateAllFromSnapshot(ViewModel.Snapshot);
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs args)
+    {
+        DispatcherQueue.TryEnqueue(ApplyLocalization);
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         Loaded -= OnLoaded;
+        ContentTabs.SelectedItem = UsagePageTab;
+        ResizeUsageWebViewToHost();
         await RefreshAsync();
+        ContentTabs.SelectedItem = UsagePageTab;
+        ResizeUsageWebViewToHost();
         _refreshTimer.Start();
     }
 
@@ -143,6 +259,42 @@ public sealed partial class MainPage : Page
         await ShowSettingsDialogAsync();
     }
 
+    private void OnUsageWebViewHostSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        ResizeUsageWebViewToHost();
+    }
+
+    private void OnContentTabsSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ReferenceEquals(ContentTabs.SelectedItem as TabViewItem, UsagePageTab))
+        {
+            ResizeUsageWebViewToHost();
+        }
+    }
+
+    private async void OnTokenRangeSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (TokenRangeComboBox.SelectedItem is not ComboBoxItem item
+            || item.Tag is not string rawRange
+            || !Enum.TryParse(rawRange, out TokenUsageRange range)
+            || ViewModel.TokenRange == range)
+        {
+            return;
+        }
+
+        ViewModel.TokenRange = range;
+        TokenMeterSettingsService.SetRange(range);
+        ViewModel.IsTokenRefreshing = true;
+        try
+        {
+            ApplyTokenSnapshot(await RefreshTokenUsageCoreAsync(ViewModel.Snapshot));
+        }
+        finally
+        {
+            ViewModel.IsTokenRefreshing = false;
+        }
+    }
+
     private async Task EnsureWebViewAsync()
     {
         if (_isWebViewReady)
@@ -155,6 +307,22 @@ public sealed partial class MainPage : Page
         await UsageWebView.EnsureCoreWebView2Async(environment);
         UsageWebView.CoreWebView2.NavigationCompleted += OnCoreNavigationCompleted;
         _isWebViewReady = true;
+        ResizeUsageWebViewToHost();
+    }
+
+    private void ResizeUsageWebViewToHost()
+    {
+        double width = UsageWebViewHost.ActualWidth;
+        double height = UsageWebViewHost.ActualHeight;
+        if (width > 1)
+        {
+            UsageWebView.Width = width;
+        }
+
+        if (height > 1)
+        {
+            UsageWebView.Height = height;
+        }
     }
 
     private async Task<bool> NavigateToUsagePageAsync()
@@ -333,4 +501,60 @@ public sealed partial class MainPage : Page
         _trayIcon?.Update(snapshot);
         SnapshotChanged?.Invoke(this, snapshot);
     }
+
+    private void ApplyTokenSnapshot(TokenUsageSnapshot snapshot)
+    {
+        ViewModel.ApplyTokenSnapshot(snapshot);
+        SelectTokenRange(snapshot.Range);
+    }
+
+    private Task<TokenUsageSnapshot> RefreshTokenUsageCoreAsync(UsageSnapshot? usageSnapshot = null)
+    {
+        TokenUsageWindow? fiveHourWindow = UsageResetTimeFormatter.TryGetFiveHourWindow(usageSnapshot ?? ViewModel.Snapshot, out TokenUsageWindow resolvedWindow)
+            ? resolvedWindow
+            : null;
+        return _tokenUsageMeter.RefreshAsync(ViewModel.TokenRange, AppPaths.PricingCacheFolder, fiveHourWindow);
+    }
+
+    private void SelectTokenRange(TokenUsageRange range)
+    {
+        foreach (object item in TokenRangeComboBox.Items)
+        {
+            if (item is ComboBoxItem comboBoxItem
+                && comboBoxItem.Tag is string rawRange
+                && Enum.TryParse(rawRange, out TokenUsageRange itemRange)
+                && itemRange == range)
+            {
+                TokenRangeComboBox.SelectedItem = comboBoxItem;
+                return;
+            }
+        }
+    }
+
+    private void ApplyTokenRangeComboText()
+    {
+        foreach (object item in TokenRangeComboBox.Items)
+        {
+            if (item is ComboBoxItem comboBoxItem
+                && comboBoxItem.Tag is string rawRange
+                && Enum.TryParse(rawRange, out TokenUsageRange range))
+            {
+                comboBoxItem.Content = AppText.TokenRangeText(range);
+            }
+        }
+
+        SelectTokenRange(ViewModel.TokenRange);
+    }
+
+    private static List<LanguageOption> CreateLanguageOptions()
+    {
+        return
+        [
+            new(LanguageMode.System, AppText.FollowSystemLanguage),
+            new(LanguageMode.ChineseSimplified, AppText.SimplifiedChinese),
+            new(LanguageMode.English, AppText.English),
+        ];
+    }
+
+    private sealed record LanguageOption(LanguageMode Mode, string DisplayName);
 }

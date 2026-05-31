@@ -7,4 +7,6 @@ internal static class AppPaths
         "CodexUsageTray");
 
     public static string WebViewUserDataFolder { get; } = Path.Combine(AppDataFolder, "WebView2");
+
+    public static string PricingCacheFolder { get; } = Path.Combine(AppDataFolder, "Pricing");
 }

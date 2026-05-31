@@ -48,4 +48,20 @@ public sealed class UsageResetTimeFormatterTests
 
         Assert.AreEqual("--", text);
     }
+
+    [TestMethod]
+    public void TryGetFiveHourWindow_WithResetTime_ReturnsCurrentLimitWindow()
+    {
+        DateTimeOffset capturedAt = new(2026, 5, 31, 10, 42, 0, TimeSpan.FromHours(10));
+        UsageSnapshot snapshot = new("84% remaining", string.Empty, string.Empty, 84, capturedAt, UsageStatus.Available)
+        {
+            FiveHourLimit = new UsageLimitSnapshot("5h", 84, "重置时间： 12:39"),
+        };
+
+        bool found = UsageResetTimeFormatter.TryGetFiveHourWindow(snapshot, out TokenUsageWindow window);
+
+        Assert.IsTrue(found);
+        Assert.AreEqual(new DateTimeOffset(2026, 5, 31, 7, 39, 0, TimeSpan.FromHours(10)), window.Start);
+        Assert.AreEqual(new DateTimeOffset(2026, 5, 31, 12, 39, 0, TimeSpan.FromHours(10)), window.End);
+    }
 }

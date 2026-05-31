@@ -17,6 +17,7 @@
             DefaultLabelPosition="Right"
             IsDynamicOverflowEnabled="False">
             <AppBarButton
+                x:Name="RefreshButton"
                 AutomationProperties.AutomationId="RefreshUsageButton"
                 AutomationProperties.Name="Refresh Codex usage"
                 Click="OnRefreshClicked"
@@ -26,6 +27,7 @@
                 </AppBarButton.Icon>
             </AppBarButton>
             <AppBarButton
+                x:Name="OpenUsagePageButton"
                 AutomationProperties.AutomationId="OpenUsagePageButton"
                 AutomationProperties.Name="Open Codex usage page"
                 Click="OnOpenUsagePageClicked"
@@ -35,6 +37,7 @@
                 </AppBarButton.Icon>
             </AppBarButton>
             <AppBarButton
+                x:Name="SettingsButton"
                 AutomationProperties.AutomationId="SettingsButton"
                 AutomationProperties.Name="Open settings"
                 Click="OnSettingsClicked"
@@ -57,12 +60,14 @@
                 VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="18">
                     <TextBlock
+                        x:Name="PageTitleText"
                         FontSize="28"
                         FontWeight="SemiBold"
                         Text="Codex Usage" />
 
                     <StackPanel Spacing="6">
                         <TextBlock
+                            x:Name="StatusLabel"
                             FontSize="12"
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                             Text="Status" />
@@ -75,6 +80,7 @@
 
                     <StackPanel Spacing="6">
                         <TextBlock
+                            x:Name="RemainingLabel"
                             FontSize="12"
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                             Text="Remaining" />
@@ -85,6 +91,7 @@
 
                     <StackPanel Spacing="6">
                         <TextBlock
+                            x:Name="FiveHourLimitLabel"
                             FontSize="12"
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                             Text="5h limit" />
@@ -95,6 +102,7 @@
 
                     <StackPanel Spacing="6">
                         <TextBlock
+                            x:Name="WeeklyLimitLabel"
                             FontSize="12"
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                             Text="Weekly limit" />
@@ -105,6 +113,7 @@
 
                     <StackPanel Spacing="6">
                         <TextBlock
+                            x:Name="UsedLabel"
                             FontSize="12"
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                             Text="Used" />
@@ -115,6 +124,7 @@
 
                     <StackPanel Spacing="6">
                         <TextBlock
+                            x:Name="ResetLabel"
                             FontSize="12"
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                             Text="Reset" />
@@ -125,6 +135,7 @@
 
                     <StackPanel Spacing="6">
                         <TextBlock
+                            x:Name="LastUpdatedLabel"
                             FontSize="12"
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                             Text="Last updated" />
@@ -150,10 +161,263 @@
                 Grid.Column="1"
                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                 BorderThickness="1,0,0,0">
-                <WebView2
-                    x:Name="UsageWebView"
-                    AutomationProperties.AutomationId="UsageWebView"
-                    AutomationProperties.Name="Codex usage web page" />
+                <TabView
+                    x:Name="ContentTabs"
+                    CanDragTabs="False"
+                    CanReorderTabs="False"
+                    HorizontalAlignment="Stretch"
+                    IsAddTabButtonVisible="False"
+                    SelectionChanged="OnContentTabsSelectionChanged"
+                    VerticalAlignment="Stretch">
+                    <TabViewItem
+                        x:Name="UsagePageTab"
+                        HorizontalContentAlignment="Stretch"
+                        IsClosable="False"
+                        Header="Usage page"
+                        VerticalContentAlignment="Stretch">
+                        <Grid
+                            x:Name="UsageWebViewHost"
+                            MinHeight="360"
+                            HorizontalAlignment="Stretch"
+                            SizeChanged="OnUsageWebViewHostSizeChanged"
+                            VerticalAlignment="Stretch">
+                            <WebView2
+                                x:Name="UsageWebView"
+                                MinWidth="320"
+                                MinHeight="360"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                AutomationProperties.AutomationId="UsageWebView"
+                                AutomationProperties.Name="Codex usage web page" />
+                        </Grid>
+                    </TabViewItem>
+
+                    <TabViewItem
+                        x:Name="TokenMeterTab"
+                        HorizontalContentAlignment="Stretch"
+                        IsClosable="False"
+                        Header="Token Meter"
+                        VerticalContentAlignment="Stretch">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Padding="24" Spacing="18">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Spacing="6">
+                                        <TextBlock
+                                            x:Name="TokenMeterTitleText"
+                                            FontSize="26"
+                                            FontWeight="SemiBold"
+                                            Text="Token Meter" />
+                                        <TextBlock
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Text="{x:Bind ViewModel.TokenStatusText, Mode=OneWay}"
+                                            TextWrapping="WrapWholeWords" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1" Spacing="4">
+                                        <TextBlock
+                                            x:Name="TokenRangeLabel"
+                                            FontSize="12"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Text="Range" />
+                                        <ComboBox
+                                            x:Name="TokenRangeComboBox"
+                                            MinWidth="180"
+                                            SelectionChanged="OnTokenRangeSelectionChanged">
+                                            <ComboBoxItem Tag="Today" />
+                                            <ComboBoxItem Tag="Last7Days" />
+                                            <ComboBoxItem Tag="CurrentMonth" />
+                                            <ComboBoxItem Tag="AllHistory" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid ColumnSpacing="16" RowSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <StackPanel Spacing="6">
+                                        <TextBlock
+                                            x:Name="TotalTokensLabel"
+                                            FontSize="12"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Text="Total tokens" />
+                                        <TextBlock
+                                            FontSize="30"
+                                            FontWeight="SemiBold"
+                                            Text="{x:Bind ViewModel.TokenTotalText, Mode=OneWay}" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1" Spacing="6">
+                                        <TextBlock
+                                            x:Name="TokenCostLabel"
+                                            FontSize="12"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Text="Estimated cost" />
+                                        <TextBlock
+                                            FontSize="30"
+                                            FontWeight="SemiBold"
+                                            Text="{x:Bind ViewModel.TokenCostText, Mode=OneWay}" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2" Spacing="6">
+                                        <TextBlock
+                                            x:Name="FiveHourWindowTokensLabel"
+                                            FontSize="12"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Text="Current 5h window" />
+                                        <TextBlock
+                                            FontSize="30"
+                                            FontWeight="SemiBold"
+                                            Text="{x:Bind ViewModel.TokenFiveHourWindowText, Mode=OneWay}" />
+                                        <TextBlock
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Text="{x:Bind ViewModel.TokenFiveHourWindowRangeText, Mode=OneWay}"
+                                            TextWrapping="WrapWholeWords" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Row="1" Grid.ColumnSpan="3" Spacing="6">
+                                        <TextBlock
+                                            x:Name="TokenBreakdownLabel"
+                                            FontSize="12"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Text="Breakdown" />
+                                        <TextBlock
+                                            Text="{x:Bind ViewModel.TokenBreakdownText, Mode=OneWay}"
+                                            TextWrapping="WrapWholeWords" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <InfoBar
+                                    x:Name="TokenUnknownCostInfo"
+                                    IsOpen="{x:Bind ViewModel.HasTokenUnknownCost, Mode=OneWay}"
+                                    IsIconVisible="False"
+                                    Message="{x:Bind ViewModel.TokenUnknownCostText, Mode=OneWay}"
+                                    Severity="Informational" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Spacing="8">
+                                        <TextBlock
+                                            x:Name="TokenClientsLabel"
+                                            FontSize="18"
+                                            FontWeight="SemiBold"
+                                            Text="Clients" />
+                                        <ListView
+                                            MaxHeight="260"
+                                            ItemsSource="{x:Bind ViewModel.TokenClientSummaries, Mode=OneWay}">
+                                            <ListView.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid ColumnSpacing="10" Padding="0,6">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <StackPanel>
+                                                            <TextBlock FontWeight="SemiBold" Text="{Binding Client}" />
+                                                            <TextBlock
+                                                                FontSize="12"
+                                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                                Text="{Binding Breakdown}"
+                                                                TextWrapping="WrapWholeWords" />
+                                                        </StackPanel>
+                                                        <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                                                            <TextBlock HorizontalAlignment="Right" Text="{Binding TotalTokens}" />
+                                                            <TextBlock
+                                                                HorizontalAlignment="Right"
+                                                                FontSize="12"
+                                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                                Text="{Binding Cost}" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ListView.ItemTemplate>
+                                        </ListView>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1" Spacing="8">
+                                        <TextBlock
+                                            x:Name="TokenMetadataLabel"
+                                            FontSize="18"
+                                            FontWeight="SemiBold"
+                                            Text="Pricing" />
+                                        <TextBlock
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Text="{x:Bind ViewModel.TokenPricingText, Mode=OneWay}"
+                                            TextWrapping="WrapWholeWords" />
+                                        <TextBlock
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Text="{x:Bind ViewModel.TokenFilesText, Mode=OneWay}"
+                                            TextWrapping="WrapWholeWords" />
+                                        <TextBlock
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Text="{x:Bind ViewModel.TokenLastUpdatedText, Mode=OneWay}"
+                                            TextWrapping="WrapWholeWords" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <StackPanel Spacing="8">
+                                    <TextBlock
+                                        x:Name="TokenModelsLabel"
+                                        FontSize="18"
+                                        FontWeight="SemiBold"
+                                        Text="Models" />
+                                    <ListView ItemsSource="{x:Bind ViewModel.TokenModelSummaries, Mode=OneWay}">
+                                        <ListView.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid ColumnSpacing="10" Padding="0,7">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="2*" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel>
+                                                        <TextBlock FontWeight="SemiBold" Text="{Binding Model}" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock
+                                                            FontSize="12"
+                                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                            Text="{Binding Breakdown}"
+                                                            TextWrapping="WrapWholeWords" />
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1">
+                                                        <TextBlock Text="{Binding Client}" />
+                                                        <TextBlock
+                                                            FontSize="12"
+                                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                            Text="{Binding Provider}" />
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="2" HorizontalAlignment="Right">
+                                                        <TextBlock HorizontalAlignment="Right" Text="{Binding TotalTokens}" />
+                                                        <TextBlock
+                                                            HorizontalAlignment="Right"
+                                                            FontSize="12"
+                                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                            Text="{Binding Cost}" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ListView.ItemTemplate>
+                                    </ListView>
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabViewItem>
+                </TabView>
             </Border>
         </Grid>
     </Grid>
