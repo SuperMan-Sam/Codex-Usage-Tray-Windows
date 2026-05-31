@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="CodexUsageTray.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid RowSpacing="0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <CommandBar
+            DefaultLabelPosition="Right"
+            IsDynamicOverflowEnabled="False">
+            <AppBarButton
+                AutomationProperties.AutomationId="RefreshUsageButton"
+                AutomationProperties.Name="Refresh Codex usage"
+                Click="OnRefreshClicked"
+                Label="Refresh">
+                <AppBarButton.Icon>
+                    <SymbolIcon Symbol="Refresh" />
+                </AppBarButton.Icon>
+            </AppBarButton>
+            <AppBarButton
+                AutomationProperties.AutomationId="OpenUsagePageButton"
+                AutomationProperties.Name="Open Codex usage page"
+                Click="OnOpenUsagePageClicked"
+                Label="Open usage page">
+                <AppBarButton.Icon>
+                    <SymbolIcon Symbol="OpenFile" />
+                </AppBarButton.Icon>
+            </AppBarButton>
+            <AppBarButton
+                AutomationProperties.AutomationId="SettingsButton"
+                AutomationProperties.Name="Open settings"
+                Click="OnSettingsClicked"
+                Label="Settings">
+                <AppBarButton.Icon>
+                    <SymbolIcon Symbol="Setting" />
+                </AppBarButton.Icon>
+            </AppBarButton>
+        </CommandBar>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="340" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <ScrollViewer
+                Grid.Column="0"
+                Padding="24,20"
+                VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="18">
+                    <TextBlock
+                        FontSize="28"
+                        FontWeight="SemiBold"
+                        Text="Codex Usage" />
+
+                    <StackPanel Spacing="6">
+                        <TextBlock
+                            FontSize="12"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Status" />
+                        <TextBlock
+                            FontSize="20"
+                            FontWeight="SemiBold"
+                            Text="{x:Bind ViewModel.StatusText, Mode=OneWay}"
+                            TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock
+                            FontSize="12"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Remaining" />
+                        <TextBlock
+                            Text="{x:Bind ViewModel.RemainingText, Mode=OneWay}"
+                            TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock
+                            FontSize="12"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="5h limit" />
+                        <TextBlock
+                            Text="{x:Bind ViewModel.FiveHourLimitText, Mode=OneWay}"
+                            TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock
+                            FontSize="12"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Weekly limit" />
+                        <TextBlock
+                            Text="{x:Bind ViewModel.WeeklyLimitText, Mode=OneWay}"
+                            TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock
+                            FontSize="12"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Used" />
+                        <TextBlock
+                            Text="{x:Bind ViewModel.UsedText, Mode=OneWay}"
+                            TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock
+                            FontSize="12"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Reset" />
+                        <TextBlock
+                            Text="{x:Bind ViewModel.ResetText, Mode=OneWay}"
+                            TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock
+                            FontSize="12"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Last updated" />
+                        <TextBlock
+                            Text="{x:Bind ViewModel.LastUpdatedText, Mode=OneWay}"
+                            TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <ProgressRing
+                            Width="20"
+                            Height="20"
+                            IsActive="{x:Bind ViewModel.IsRefreshing, Mode=OneWay}" />
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="{x:Bind ViewModel.RefreshStateText, Mode=OneWay}" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+
+            <Border
+                Grid.Column="1"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1,0,0,0">
+                <WebView2
+                    x:Name="UsageWebView"
+                    AutomationProperties.AutomationId="UsageWebView"
+                    AutomationProperties.Name="Codex usage web page" />
+            </Border>
+        </Grid>
+    </Grid>
+</Page>

@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "CodexUsageTray (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "CodexUsageTray (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

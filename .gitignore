@@ -1,0 +1,23 @@
+# Build output
+bin/
+obj/
+TestResults/
+AppPackages/
+BundleArtifacts/
+
+# Visual Studio / local user state
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Package/signing artifacts
+*.appx
+*.appxbundle
+*.msix
+*.msixbundle
+*.pfx
+
+# Local QA screenshots generated while iterating on the tray UI
+/CodexUsageTray-*.png
