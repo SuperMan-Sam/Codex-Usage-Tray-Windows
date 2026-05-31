@@ -1,4 +1,5 @@
 using CodexUsageTray.Services;
+using CodexUsageTray.Widgets;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 
@@ -7,8 +8,8 @@ namespace CodexUsageTray;
 public partial class App : Application
 {
     private MainWindow? _window;
-    private TaskbarWidgetWindow? _taskbarWidget;
     private TrayIconService? _trayIcon;
+    private WidgetProviderRegistrationService? _widgetProviderRegistration;
 
     public App()
     {
@@ -24,6 +25,12 @@ public partial class App : Application
     {
         try
         {
+            _widgetProviderRegistration = WidgetProviderRegistrationService.TryRegister();
+            if (IsWidgetProviderLaunch())
+            {
+                return;
+            }
+
             _window = new MainWindow();
             _trayIcon = new TrayIconService(
                 DispatcherQueue.GetForCurrentThread(),
@@ -35,9 +42,8 @@ public partial class App : Application
                 ExitApplication);
             _window.MainPage.AttachTrayIcon(_trayIcon);
             _window.MainPage.SnapshotChanged += OnSnapshotChanged;
-            _taskbarWidget = new TaskbarWidgetWindow(ShowWindow, ExitApplication);
-            _taskbarWidget.Update(_window.MainPage.ViewModel.Snapshot);
-            _taskbarWidget.ShowWidget();
+            UsageSnapshotCache.Save(_window.MainPage.ViewModel.Snapshot);
+            CodexUsageWidgetProvider.UpdateAllFromSnapshot(_window.MainPage.ViewModel.Snapshot);
             _window.Activate();
         }
         catch (Exception ex)
@@ -81,8 +87,8 @@ public partial class App : Application
     {
         _trayIcon?.Dispose();
         _trayIcon = null;
-        _taskbarWidget?.Close();
-        _taskbarWidget = null;
+        _widgetProviderRegistration?.Dispose();
+        _widgetProviderRegistration = null;
         _window?.MainPage.Shutdown();
         _window?.CloseForExit();
         Exit();
@@ -90,7 +96,16 @@ public partial class App : Application
 
     private void OnSnapshotChanged(object? sender, CodexUsageTray.Core.Models.UsageSnapshot snapshot)
     {
-        _taskbarWidget?.Update(snapshot);
+        UsageSnapshotCache.Save(snapshot);
+        CodexUsageWidgetProvider.UpdateAllFromSnapshot(snapshot);
+    }
+
+    private static bool IsWidgetProviderLaunch()
+    {
+        return Environment.GetCommandLineArgs()
+            .Skip(1)
+            .Any(arg => string.Equals(arg, "-Embedding", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(arg, "/Embedding", StringComparison.OrdinalIgnoreCase));
     }
 
     private static void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)

@@ -1,10 +1,10 @@
 # Codex Usage Tray for Windows
 
-Codex Usage Tray is a compact Windows utility that shows ChatGPT Codex usage in the Windows taskbar. It reads the official Codex usage page in an embedded WebView2 session and displays the 5-hour and weekly remaining limits directly inside the taskbar.
+Codex Usage Tray is a compact Windows utility that shows ChatGPT Codex usage in a tray app and an official Windows 11 Widget. It reads the official Codex usage page in an embedded WebView2 session, caches the latest safe snapshot locally, and renders the 5-hour and weekly remaining limits in the Widgets board.
 
 ## Features
 
-- Shows Codex 5-hour and weekly remaining usage in a taskbar-embedded widget.
+- Shows Codex 5-hour and weekly remaining usage in an official Windows 11 Widget.
 - Displays reset time as remaining hours, for example `2h` or `165h`.
 - Updates usage every minute.
 - Uses a tray icon as a fallback status indicator:
@@ -16,6 +16,7 @@ Codex Usage Tray is a compact Windows utility that shows ChatGPT Codex usage in 
 - Includes context menus for refresh, opening the usage page, settings, and exit.
 - Supports optional start-with-Windows registration from the settings dialog.
 - Includes a one-click launcher: `StartCodexUsageTray.cmd`.
+- Includes a widget registration helper: `RegisterCodexUsageWidget.ps1`.
 
 ## Privacy and Data Source
 
@@ -68,6 +69,18 @@ dotnet run --no-build -c Debug "-p:Platform=$platform" --project .\CodexUsageTra
 
 On first run, sign in through the app window if needed, then use Refresh to capture usage.
 
+## Register the Windows 11 Widget
+
+Windows Widgets for Win32 apps require a packaged app registration. Build and register the debug package with:
+
+```powershell
+.\RegisterCodexUsageWidget.ps1
+```
+
+Then open Widgets with `Win+W`, choose Add widgets, and pin `Codex Usage`.
+
+The widget displays the latest cached snapshot from the tray app. Run `StartCodexUsageTray.cmd`, sign in through WebView2 if needed, and refresh once before expecting live data in the widget.
+
 ## Test
 
 ```powershell
@@ -80,14 +93,15 @@ The test suite covers parser behavior, reset-hour formatting, and tray icon stat
 ## Project Layout
 
 ```text
-CodexUsageTray/          WinUI 3 app, WebView2 host, tray icon, taskbar widget
+CodexUsageTray/          WinUI 3 app, WebView2 host, tray icon, Windows Widget provider
 CodexUsageTray.Core/     Usage parser and shared models/services
 CodexUsageTray.Tests/    MSTest coverage for parsing and state logic
 StartCodexUsageTray.*    One-click Windows launcher scripts
+RegisterCodexUsageWidget.ps1
 ```
 
 ## Notes
 
-- The taskbar usage display is implemented as a native Win32 child window under `Shell_TrayWnd`, not as a normal top-level floating window.
+- The Windows 11 Widget appears in the Widgets board, not as a first-party weather-style live taskbar surface. Windows 11 does not expose a public third-party API for embedding arbitrary app UI directly inside the taskbar.
 - The tray icon uses native `Shell_NotifyIconW` interop.
-- The taskbar widget is tuned for the primary Windows taskbar and may need adjustment for unusual taskbar replacements or heavily customized Explorer shells.
+- The widget provider reads only the app's cached usage snapshot. It does not read cookies, local Codex credentials, `auth.json`, or private ChatGPT APIs.

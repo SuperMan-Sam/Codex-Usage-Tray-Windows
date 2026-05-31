@@ -69,13 +69,17 @@ foreach ($process in $runningProcesses) {
     $windows = [WindowTools]::FindWindowsForProcess($process.Id)
     if ($windows.Count -gt 0) {
         $mainWindow = $windows | Where-Object { [WindowTools]::GetWindowTitle($_) -eq "Codex Usage Tray" } | Select-Object -First 1
-        if ($null -eq $mainWindow) {
-            $mainWindow = $windows[0]
+        if ($null -ne $mainWindow) {
+            [WindowTools]::RestoreWindow($mainWindow)
+            exit 0
         }
-
-        [WindowTools]::RestoreWindow($mainWindow)
-        exit 0
     }
+}
+
+$registeredPackage = Get-AppxPackage -Name "15FA8D5C-9A8A-444E-823D-C71E45662FCD" -ErrorAction SilentlyContinue | Select-Object -First 1
+if ($null -ne $registeredPackage) {
+    Start-Process "shell:AppsFolder\$($registeredPackage.PackageFamilyName)!App"
+    exit 0
 }
 
 if (-not (Test-Path -LiteralPath $builtExe)) {

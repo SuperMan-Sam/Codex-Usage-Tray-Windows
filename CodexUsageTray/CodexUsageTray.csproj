@@ -25,6 +25,12 @@
     <Content Include="Assets\StoreLogo.png" />
     <Content Include="Assets\AppIcon.ico" />
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
+    <Content Include="ProviderAssets\CodexUsageWidgetIcon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProviderAssets\CodexUsageWidgetScreenshot.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -77,4 +83,21 @@
     <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
     <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
   </PropertyGroup>
+
+  <Target Name="PatchWidgetProviderAppxLayout" AfterTargets="Build">
+    <PropertyGroup>
+      <WidgetProviderAppxLayout>$(OutDir)AppX\</WidgetProviderAppxLayout>
+    </PropertyGroup>
+    <Copy
+      SourceFiles="$(OutDir)AppxManifest.xml"
+      DestinationFiles="$(WidgetProviderAppxLayout)AppxManifest.xml"
+      Condition="Exists('$(OutDir)AppxManifest.xml') and Exists('$(WidgetProviderAppxLayout)')" />
+    <MakeDir
+      Directories="$(WidgetProviderAppxLayout)ProviderAssets"
+      Condition="Exists('$(WidgetProviderAppxLayout)')" />
+    <Copy
+      SourceFiles="ProviderAssets\CodexUsageWidgetIcon.png;ProviderAssets\CodexUsageWidgetScreenshot.png"
+      DestinationFolder="$(WidgetProviderAppxLayout)ProviderAssets"
+      Condition="Exists('$(WidgetProviderAppxLayout)')" />
+  </Target>
 </Project>

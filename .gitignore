@@ -21,3 +21,8 @@ BundleArtifacts/
 
 # Local QA screenshots generated while iterating on the tray UI
 /CodexUsageTray-*.png
+/probe-*.png
+/screen-*.png
+/taskbar-*.png
+/widget-*.png
+/xaml-widget-*.png
